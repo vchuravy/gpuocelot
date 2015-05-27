@@ -191,7 +191,7 @@ def getGLEW(env, enabled):
  
 	return (glew,bin_path,lib_path,inc_path,libs)
 
-def getLLVMPaths(enabled):
+def getUserSpecifiedLLVMPaths(enabled):
 	"""Determines LLVM {have,bin,lib,include,cflags,lflags,libs} paths
 	
 	from user specified variables
@@ -199,22 +199,26 @@ def getLLVMPaths(enabled):
 	returns (have,bin_path,lib_path,inc_path,cflags,lflags,libs)
 	"""
 
+	llvm_path = '/usr/local'
+	if 'LLVM_PATH' in os.environ:
+		llvm_path = os.path.abspath(os.environ['LLVM_PATH'])
+
 	# determine defaults
-	bin_path = ['/usr/local/bin']
-	lib_path = ['/usr/local/lib']
-	inc_path = ['/usr/local/include']
+	bin_path = [llvm_path + '/bin']
+	lib_path = [llvm_path + '/lib']
+	inc_path = [llvm_path + '/include']
 	cflags   = ['-I/usr/local/include', '-D_DEBUG', '-D_GNU_SOURCE',
 	            '-D__STDC_CONSTANT_MACROS', '-D__STDC_FORMAT_MACROS',
 	            '-D__STDC_LIMIT_MACROS']
-	libs     = ['-lLLVMAsmParser', '-lLLVMX86CodeGen', '-lLLVMSelectionDAG',
-	            '-lLLVMAsmPrinter', '-lLLVMX86AsmParser', '-lLLVMMCParser',
-	            '-lLLVMX86Disassembler', '-lLLVMX86Desc', '-lLLVMX86Info',
-	            '-lLLVMX86AsmPrinter', '-lLLVMX86Utils', '-lLLVMJIT',
-	            '-lLLVMRuntimeDyld', '-lLLVMExecutionEngine', '-lLLVMCodeGen',
-	            '-lLLVMScalarOpts', '-lLLVMInstCombine', '-lLLVMTransformUtils',
-	            '-lLLVMipa', '-lLLVMAnalysis', '-lLLVMTarget', '-lLLVMMC',
-	            '-lLLVMObject', '-lLLVMCore', '-lLLVMSupport',
-	            '-lncurses', '-lz']
+	libs     = ['LLVMAsmParser', 'LLVMX86CodeGen', 'LLVMSelectionDAG',
+	            'LLVMAsmPrinter', 'LLVMX86AsmParser', 'LLVMMCParser',
+	            'LLVMX86Disassembler', 'LLVMX86Desc', 'LLVMX86Info',
+	            'LLVMX86AsmPrinter', 'LLVMX86Utils', 'LLVMJIT',
+	            'LLVMRuntimeDyld', 'LLVMExecutionEngine', 'LLVMCodeGen',
+	            'LLVMScalarOpts', 'LLVMInstCombine', 'LLVMTransformUtils',
+	            'LLVMipa', 'LLVMAnalysis', 'LLVMTarget', 'LLVMMC',
+	            'LLVMObject', 'LLVMCore', 'LLVMSupport',
+	            'ncurses', 'z']
 	
 	if os.name == 'nt':
 		lflags =  []
@@ -247,25 +251,28 @@ def getLLVMPaths(enabled):
 	returns (have,bin_path,lib_path,inc_path,cflags,lflags,libs)
 	"""
 	
+
 	if not enabled:
 		return (False, [], [], [], [], [], [])
 	
 	if 'USER_SPECIFIED_LLVM_PATHS' in os.environ:
 		return getUserSpecifiedLLVMPaths()
+	elif 'LLVM_PATH' in os.environ:
+		llvm_config = os.path.abspath(os.environ['LLVM_PATH']) + '/bin/llvm-config'
 	else:
 		try:
-			llvm_config_path = which('llvm-config')
+			llvm_config = which('llvm-config')
 		except:
 			print 'Failed to find llvm-config'
 			return (False, [], [], [], [], [], [])
 	
 	# determine defaults
-	bin_path = os.popen('llvm-config --bindir').read().split()
-	lib_path = os.popen('llvm-config --libdir').read().split()
-	inc_path = os.popen('llvm-config --includedir').read().split()
-	cflags   = os.popen('llvm-config --cppflags').read().split()
-	lflags   = os.popen('llvm-config --ldflags').read().split()
-	libs     = os.popen('llvm-config --libs core jit native \
+	bin_path = os.popen(llvm_config + ' --bindir').read().split()
+	lib_path = os.popen(llvm_config + ' --libdir').read().split()
+	inc_path = os.popen(llvm_config + ' --includedir').read().split()
+	cflags   = os.popen(llvm_config + ' --cppflags').read().split()
+	lflags   = os.popen(llvm_config + ' --ldflags').read().split()
+	libs     = os.popen(llvm_config + ' --libs core jit native \
 		asmparser instcombine').read().split()
 	
 	# remove -DNDEBUG
